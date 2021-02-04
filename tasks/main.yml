@@ -1,0 +1,40 @@
+---
+- name: Install airflow 2.0 in ubuntu
+  hosts: localhost
+  become: true
+  vars:
+    proxy_env:
+      AIRFLOW_HOME: ~/airflow
+  tasks:
+    - name: Update apt packages
+      command: sudo apt update
+    - name: Install pip3 package
+      command: sudo apt install python3-pip -y
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+       path: /home/ubuntu/airflow
+       state: directory
+       mode: '0755'
+    - name: Install Airflow 2.0 usig pip command
+      command: pip3 install apache-airflow
+    - name: Initialize the database
+      command: airflow db init
+      environment: "{{ proxy_env }}"
+    - name: start the web server, default port is 8080
+      command: airflow webserver --port 8080 -D
+      ignore_errors: yes
+      environment: "{{ proxy_env }}"
+    - name: start the scheduler
+      command: airflow scheduler -D
+      environment: "{{ proxy_env }}"
+    - name: Explicitly specifying positional matched groups in replacement
+      ansible.builtin.replace:
+       path: /root/airflow/airflow.cfg
+       regexp: '^(executor[ ]+)[^\n]+$'
+       replace: '\g<1>LocalExecutor'
+    - name: Explicitly specifying positional matched groups in replacement
+      ansible.builtin.replace:
+       path: /root/airflow/airflow.cfg
+       regexp: '^( sql_alchemy_conn[ ]+)[^\n]+$'
+       replace: '\g<1>mysql://root:root@localhost:3306/airflow'---
+# tasks file for airflow2
